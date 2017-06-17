@@ -8,4 +8,4 @@ __test__*__
 t
 *.exe
 dub.selections.json
-ddhx
+ds
