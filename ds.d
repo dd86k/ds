@@ -26,7 +26,7 @@ private int main(string[] args)
 		stderr.writeln("Error: ", ex.msg);
         return 1;
 	}
-    
+
     if (r.helpWanted) {
         PrintHelp;
         writeln("\nOption             Description");
@@ -46,12 +46,12 @@ private int main(string[] args)
         if (e.isSymlink) {
             if (cont)
                 goto FILE;
-            writefln("%s\nSymlink", f);
+            writefln("%s\nType: Symlink", f);
         } else if (e.isDir) {
-            writefln("%s\nDirectory", f);
+            writefln("%s\nType: Directory", f);
         } else {
 FILE:
-            writefln("%s\nSize: %s", f, formatsize(e.size));
+            writefln("%s\nType: File\nSize: %s", f, formatsize(e.size));
             version (Windows)
                 writefln("Created: %s", e.timeCreated);
             writefln("Access : %s", e.timeLastAccessed);
