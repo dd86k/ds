@@ -42,7 +42,7 @@ private int main(string[] args)
     
     string f = args[$ - 1];
     if (exists(f)) {
-        const DirEntry e = DirEntry(f);
+        DirEntry e = DirEntry(f);
         if (e.isSymlink) {
             if (cont)
                 goto FILE;
