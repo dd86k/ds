@@ -1,10 +1,10 @@
 import std.getopt, std.stdio, std.file;
 
 enum
-    PROJECT_NAME = "ds",
-    PROJECT_VERSION = "0.0.0";
+    PROJECT_NAME = "ds", /// Project name
+    PROJECT_VERSION = "0.0.0"; /// Project version
 
-bool Base10, cont;
+bool Base10, cont, raw, sizeonly;
 
 private int main(string[] args)
 {
@@ -20,6 +20,10 @@ private int main(string[] args)
             "b|base10", "Use decimal metrics instead of binary.", &Base10,
             config.bundling, config.caseSensitive,
             "c|continue", "Continue on soft symlink.", &cont,
+            config.bundling, config.caseSensitive,
+            "s|size-only", "Give only the size.", &sizeonly,
+            config.bundling, config.caseSensitive,
+            "r|raw", "Do not format size.", &raw,
             config.caseSensitive,
             "v|version", "Print version information.", &PrintVersion);
 	} catch (GetOptException ex) {
@@ -39,28 +43,39 @@ private int main(string[] args)
         }
         return 0;
 	}
-    
-    string f = args[$ - 1];
-    if (exists(f)) {
-        DirEntry e = DirEntry(f);
-        if (e.isSymlink) {
-            if (cont)
-                goto FILE;
-            writefln("%s\nType: Symlink", f);
-        } else if (e.isDir) {
-            writefln("%s\nType: Directory", f);
-        } else {
+
+	foreach (arg; args[1..$]) {
+		if (exists(arg)) {
+			DirEntry e = DirEntry(arg);
+			if (e.isSymlink) {
+				if (cont)
+					goto FILE;
+				writefln("%s\nType: Symlink", arg);
+			} else if (e.isDir) {
+				writefln("%s\nType: Directory", arg);
+			} else {
 FILE:
-            writefln("%s\nType: File\nSize: %s", f, formatsize(e.size));
-            version (Windows)
-                writefln("Created: %s", e.timeCreated);
-            writefln("Access : %s", e.timeLastAccessed);
-            writefln("Modif. : %s", e.timeLastModified);
-        }
-    } else {
-        writefln("Could not find entry: %s", f);
-        return 1;
-    }
+				if (sizeonly) {
+					if (raw)
+						writefln("%d", e.size);
+					else
+						writefln("%s", formatsize(e.size));
+				} else {
+					if (raw)
+						writefln("%s\nType: File\nSize: %d", arg, e.size);
+					else
+						writefln("%s\nType: File\nSize: %s", arg, formatsize(e.size));
+					version (Windows)
+						writefln("Created: %s", e.timeCreated);
+					writefln("Access : %s", e.timeLastAccessed);
+					writefln("Modif. : %s", e.timeLastModified);
+				}
+			}
+		} else {
+			stderr.writefln("Could not find entry: %s", arg);
+			return 1;
+		}
+	}
 
     return 0;
 }
@@ -75,9 +90,9 @@ void PrintHelp()
 void PrintVersion() {
     import core.stdc.stdlib : exit;
     writefln("%s %s (%s)", PROJECT_NAME, PROJECT_VERSION, __TIMESTAMP__);
-debug writefln("Compiled %s with %s v%s", __FILE__, __VENDOR__, __VERSION__);
-    writeln("MIT License: Copyright (c) 2016-2017 dd86k");
-    writeln("Project page: <https://github.com/dd86k/ds>");
+	writefln("Compiled %s with %s v%s", __FILE__, __VENDOR__, __VERSION__);
+    writeln("MIT License: Copyright (c) 2017 dd86k");
+    writefln("Project page: <https://github.com/dd86k/%s>", PROJECT_NAME);
     exit(0);
 }
 
