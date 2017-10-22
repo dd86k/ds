@@ -4,7 +4,7 @@ enum
     PROJECT_NAME = "ds", /// Project name
     PROJECT_VERSION = "0.0.0"; /// Project version
 
-bool Base10, cont, raw, sizeonly;
+__gshared bool Base10, cont, raw, sizeonly;
 
 private int main(string[] args)
 {
@@ -72,7 +72,7 @@ FILE:
 				}
 			}
 		} else {
-			stderr.writefln("Could not find entry: %s", arg);
+			stderr.writef("\nCould not find entry: %s\n", arg);
 			return 1;
 		}
 	}
@@ -80,19 +80,19 @@ FILE:
     return 0;
 }
 
-void PrintHelp()
-{
-    writeln("Get file stats.");
-    writefln("  Usage: %s [<Options>] <File>", PROJECT_NAME);
-    writefln("         %s {-h|--help|-v|--version|/?}", PROJECT_NAME);
+extern(C) void PrintHelp() {
+    printf("Get some file stats.\n");
+    printf("  Usage: ds {-b, -c, -s, -r} file\n");
+    printf("         ds {-h|--help|-v|--version|/?}\n");
 }
 
-void PrintVersion() {
+extern(C) void PrintVersion() {
     import core.stdc.stdlib : exit;
-    writefln("%s %s (%s)", PROJECT_NAME, PROJECT_VERSION, __TIMESTAMP__);
-	writefln("Compiled %s with %s v%s", __FILE__, __VENDOR__, __VERSION__);
-    writeln("MIT License: Copyright (c) 2017 dd86k");
-    writefln("Project page: <https://github.com/dd86k/%s>", PROJECT_NAME);
+    printf("ds %s (%s)\n", &PROJECT_VERSION[0], &__TIMESTAMP__[0]);
+	printf("Compiled %s with %s v%d\n",
+		&__FILE__[0], &__VENDOR__[0], __VERSION__);
+    printf("MIT License: Copyright (c) 2017 dd86k\n");
+    printf("Project page: <https://github.com/dd86k/ds>\n");
     exit(0);
 }
 
@@ -113,69 +113,26 @@ string formatsize(long size) //BUG: %f is unpure?
 
 	const float s = size;
 
-	if (Base10)
-	{
+	if (Base10) {
 		if (size > TiB)
-			if (size > 100 * TiB)
-				return format("%d TiB", size / TiB);
-			else if (size > 10 * TiB)
-				return format("%0.1f TiB", s / TiB);
-			else
-				return format("%0.2f TiB", s / TiB);
+			return format("%0.2f TiB", s / TiB);
 		else if (size > GiB)
-			if (size > 100 * GiB)
-				return format("%d GiB", size / GiB);
-			else if (size > 10 * GiB)
-				return format("%0.1f GiB", s / GiB);
-			else
-				return format("%0.2f GiB", s / GiB);
+			return format("%0.2f GiB", s / GiB);
 		else if (size > MiB)
-			if (size > 100 * MiB)
-				return format("%d MiB", size / MiB);
-			else if (size > 10 * MiB)
-				return format("%0.1f MiB", s / MiB);
-			else
-				return format("%0.2f MiB", s / MiB);
+			return format("%0.2f MiB", s / MiB);
 		else if (size > KiB)
-			if (size > 100 * MiB)
-				return format("%d KiB", size / KiB);
-			else if (size > 10 * KiB)
-				return format("%0.1f KiB", s / KiB);
-			else
-				return format("%0.2f KiB", s / KiB);
+			return format("%0.2f KiB", s / KiB);
 		else
 			return format("%d B", size);
-	}
-	else
-	{
+	} else {
 		if (size > TB)
-			if (size > 100 * TB)
-				return format("%d TB", size / TB);
-			else if (size > 10 * TB)
-				return format("%0.1f TB", s / TB);
-			else
-				return format("%0.2f TB", s / TB);
+			return format("%0.2f TB", s / TB);
 		else if (size > GB)
-			if (size > 100 * GB)
-				return format("%d GB", size / GB);
-			else if (size > 10 * GB)
-				return format("%0.1f GB", s / GB);
-			else
-				return format("%0.2f GB", s / GB);
+			return format("%0.2f GB", s / GB);
 		else if (size > MB)
-			if (size > 100 * MB)
-				return format("%d MB", size / MB);
-			else if (size > 10 * MB)
-				return format("%0.1f MB", s / MB);
-			else
-				return format("%0.2f MB", s / MB);
+			return format("%0.2f MB", s / MB);
 		else if (size > KB)
-			if (size > 100 * KB)
-				return format("%d KB", size / KB);
-			else if (size > 10 * KB)
-				return format("%0.1f KB", s / KB);
-			else
-				return format("%0.2f KB", s / KB);
+			return format("%0.2f KB", s / KB);
 		else
 			return format("%d B", size);
 	}
