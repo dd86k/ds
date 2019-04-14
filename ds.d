@@ -1,139 +1,129 @@
 import std.getopt, std.stdio, std.file;
+import std.format : format;
 
 enum
-    PROJECT_NAME = "ds", /// Project name
-    PROJECT_VERSION = "0.0.0"; /// Project version
+	PROJECT_NAME = "ds", /// Project name
+	PROJECT_VERSION = "0.0.0"; /// Project version
 
-__gshared bool Base10, cont, raw, sizeonly;
+private:
 
-private int main(string[] args)
-{
-    if (args.length == 1) {
-        PrintHelp;
-        return 0;
-    }
-
-    GetoptResult r;
-	try {
-		r = getopt(args,
-            config.bundling, config.caseSensitive,
-            "b|base10", "Use decimal metrics instead of binary.", &Base10,
-            config.bundling, config.caseSensitive,
-            "c|continue", "Continue on soft symlink.", &cont,
-            config.bundling, config.caseSensitive,
-            "s|size-only", "Give only the size.", &sizeonly,
-            config.bundling, config.caseSensitive,
-            "r|raw", "Do not format size.", &raw,
-            config.caseSensitive,
-            "v|version", "Print version information.", &PrintVersion);
-	} catch (GetOptException ex) {
-		stderr.writeln("Error: ", ex.msg);
-        return 1;
+int main(string[] args) {
+	if (args.length <= 1) {
+		PrintHelp;
+		return 0;
 	}
 
-    if (r.helpWanted) {
-        PrintHelp;
-        writeln("\nOption             Description");
-        foreach (it; r.options) { // "custom" defaultGetoptPrinter
-            writefln("%*s, %-*s%s%s",
-                4,  it.optShort,
-                12, it.optLong,
-                it.required ? "Required: " : " ",
-                it.help);
-        }
-        return 0;
+	bool cont, base10;
+
+	GetoptResult r = void;
+	try {
+		r = getopt(args,
+			config.bundling, config.caseSensitive,
+			"b", "Use decimal metrics instead of binary.", &base10,
+			"c", "Continue on soft symlink.", &cont,
+			"v|version", "Print version information.", &PrintVersion);
+	} catch (GetOptException ex) {
+		stderr.writeln("Error: ", ex.msg);
+		return 1;
+	}
+
+	if (r.helpWanted) {
+		PrintHelp;
+		writeln("\nOption             Description");
+		foreach (it; r.options) { // "custom" defaultGetoptPrinter
+			writefln("%4s, %-12s%s",
+				it.optShort, it.optLong, it.help);
+		}
+		return 0;
 	}
 
 	foreach (arg; args[1..$]) {
-		if (exists(arg)) {
-			DirEntry e = DirEntry(arg);
-			if (e.isSymlink) {
-				if (cont)
-					goto FILE;
-				writefln("%s\nType: Symlink", arg);
-			} else if (e.isDir) {
-				writefln("%s\nType: Directory", arg);
-			} else {
-FILE:
-				if (sizeonly) {
-					if (raw)
-						writefln("%d", e.size);
-					else
-						writefln("%s", formatsize(e.size));
-				} else {
-					if (raw)
-						writefln("%s\nType: File\nSize: %d", arg, e.size);
-					else
-						writefln("%s\nType: File\nSize: %s", arg, formatsize(e.size));
-					version (Windows)
-						writefln("Created: %s", e.timeCreated);
-					writefln("Access : %s", e.timeLastAccessed);
-					writefln("Modif. : %s", e.timeLastModified);
-				}
-			}
-		} else {
-			stderr.writef("\nCould not find entry: %s\n", arg);
+		if (exists(arg) == false) {
+			stderr.writef("Could not find entry: %s\n", arg);
 			return 1;
+		}
+
+		DirEntry e = DirEntry(arg);
+		if (e.isSymlink) {
+			if (cont) goto FILE;
+			writefln("%s\nType: Symlink", arg);
+		} else if (e.isDir) {
+			writefln("%s\nType: Directory", arg);
+		} else {
+FILE:
+			writefln("%s\nType: File\nSize: %s",
+				arg, e.size.formatsize(base10));
+
+			version (Windows)
+			writefln(
+				"Created: %s\nAccess : %s\nModif. : %s",
+				e.timeCreated,
+				e.timeLastAccessed,
+				e.timeLastModified
+			);
+			else
+			writefln(
+				"Access : %s\nModif. : %s",
+				e.timeLastAccessed,
+				e.timeLastModified
+			);
 		}
 	}
 
-    return 0;
+	return 0;
 }
 
-extern(C) void PrintHelp() {
-    printf("Get some file stats.\n");
-    printf("  Usage: ds {-b, -c, -s, -r} file\n");
-    printf("         ds {-h|--help|-v|--version|/?}\n");
+void PrintHelp() {
+	write(
+		"Get some file stats.\n"~
+		"  Usage: ds {-b, -c, -s, -r} file\n"~
+		"         ds {-h|--help|-v|--version|/?}\n"
+	);
 }
 
-extern(C) void PrintVersion() {
-    import core.stdc.stdlib : exit;
-    printf("ds %s (%s)\n", &PROJECT_VERSION[0], &__TIMESTAMP__[0]);
-	printf("Compiled %s with %s v%d\n",
-		&__FILE__[0], &__VENDOR__[0], __VERSION__);
-    printf("MIT License: Copyright (c) 2017 dd86k\n");
-    printf("Project page: <https://github.com/dd86k/ds>\n");
-    exit(0);
+void PrintVersion() {
+	import core.stdc.stdlib : exit;
+	writef(
+		PROJECT_NAME~" "~PROJECT_VERSION~" ("~__TIMESTAMP__~")\n"~
+		"Compiled ds with "~__VENDOR__~" v%u\n"~
+		"Project page: <https://github.com/dd86k/ds>\n",
+		__VERSION__
+	);
+	exit(0);
 }
 
-string formatsize(long size) //BUG: %f is unpure?
-{
-    import std.format : format;
-
-    enum : long {
-        KB = 1024,
-        MB = KB * 1024,
-        GB = MB * 1024,
-        TB = GB * 1024,
-        KiB = 1000,
-        MiB = KiB * 1000,
-        GiB = MiB * 1000,
-        TiB = GiB * 1000
-    }
-
-	const float s = size;
-
-	if (Base10) {
-		if (size > TiB)
-			return format("%0.2f TiB", s / TiB);
-		else if (size > GiB)
-			return format("%0.2f GiB", s / GiB);
-		else if (size > MiB)
-			return format("%0.2f MiB", s / MiB);
-		else if (size > KiB)
-			return format("%0.2f KiB", s / KiB);
-		else
-			return format("%d B", size);
-	} else {
-		if (size > TB)
-			return format("%0.2f TB", s / TB);
-		else if (size > GB)
-			return format("%0.2f GB", s / GB);
-		else if (size > MB)
-			return format("%0.2f MB", s / MB);
-		else if (size > KB)
-			return format("%0.2f KB", s / KB);
-		else
-			return format("%d B", size);
+string formatsize(const(ulong) size, bool base10 = false) {
+	enum : float {
+		KB = 1024,
+		MB = KB * 1024,
+		GB = MB * 1024,
+		TB = GB * 1024,
+		KiB = 1000,
+		MiB = KiB * 1000,
+		GiB = MiB * 1000,
+		TiB = GiB * 1000
 	}
+	
+	if (base10) goto BASE10;
+	
+	if (size > GB)
+		return format("%.2f GB", size / GB);
+	if (size > MB)
+		return format("%.2f MB", size / MB);
+	if (size > KB)
+		return format("%.2f KB", size / KB);
+	
+	goto BYTE;
+
+BASE10:
+	
+	if (size > GiB)
+		return format("%.2f GiB", size / GiB);
+	if (size > MiB)
+		return format("%.2f MiB", size / MiB);
+	if (size > KiB)
+		return format("%.2f KiB", size / KiB);
+
+BYTE:
+	return format("%u B", size);
 }
